@@ -9,7 +9,7 @@ from sympy.core.compatibility import range
 from sympy.utilities.pytest import raises
 from sympy.utilities.pytest import raises, XFAIL
 
-from sympy.abc import x, y, z
+from sympy.abc import x, y, z, m, n
 
 
 def test_interval_arguments():
@@ -899,3 +899,18 @@ def test_issue_9808():
 def test_issue_9956():
     assert Union(Interval(-oo, oo), FiniteSet(1)) == Interval(-oo, oo)
     assert Interval(-oo, oo).contains(1) is S.true
+
+
+def test_issue_Symbol_inter():
+    i = Interval(0, oo)
+    r = S.Reals
+    assert Intersection(r, i, FiniteSet(m), FiniteSet(m, n)) == \
+        Intersection(i, FiniteSet(m))
+    assert Intersection(FiniteSet(1, m, n), FiniteSet(m, n, 2), i) == \
+        Intersection(i, FiniteSet(m, n))
+    assert Intersection(FiniteSet(m, n, x), FiniteSet(m, z), r) == \
+        Intersection(r, FiniteSet(m, z), FiniteSet(n, x))
+    assert Intersection(FiniteSet(m, n, 3), FiniteSet(m, n, x), r) == \
+        Intersection(r, FiniteSet(x), FiniteSet(3, m, n), evaluate=False)
+    assert Intersection(FiniteSet(m, n, 3), FiniteSet(m, n, 2, 3), r) == \
+        Union(FiniteSet(3), Intersection(r, FiniteSet(m, n)))

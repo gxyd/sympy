@@ -1465,12 +1465,32 @@ class Intersection(Set):
                 unk = [x for x in s
                        if any(other.contains(x) not in (True, False) for other in other_args)]
                 if unk:
+                    for val in other_args:
+                        if val.is_FiniteSet:
+                            # all values from val which are contained in `s`
+                            # and are non-numbers
+                            t = [x for x in s if val.contains(x) is true and not x.is_number]
+                            fin = FiniteSet(*t)
+                            # collect the non-numbers from `s` and `val`
+                            non_numbers_in_val = [x for x in val if not x.is_number]
+                            non_numbers_in_s = [x for x in s if not x.is_number]
+                            # remove `val` from other_args
+                            other_args.remove(val)
+                            if non_numbers_in_s == non_numbers_in_val:
+                                numbers_in_s = FiniteSet(*[x for x in s if x.is_number])
+                                s = s - numbers_in_s
+                                for x in numbers_in_s:
+                                    if x in unk:
+                                        unk.remove(x)
+                            elif s != fin:
+                                val = val - fin
+                                other_args.append(val)
+
                     other_sets = Intersection(*other_args)
                     if other_sets.is_EmptySet:
                         return EmptySet()
                     res += Intersection(s.func(*unk), other_sets, evaluate=False)
                 return res
-
         # If any of the sets are unions, return a Union of Intersections
         for s in args:
             if s.is_Union:
