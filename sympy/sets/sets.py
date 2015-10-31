@@ -12,6 +12,7 @@ from sympy.core.evaluate import global_evaluate
 from sympy.core.decorators import deprecated
 from sympy.core.mul import Mul
 from sympy.core.relational import Eq
+from sympy.core.symbol import Symbol
 from sympy.sets.contains import Contains
 
 from mpmath import mpi, mpf
@@ -1457,6 +1458,7 @@ class Intersection(Set):
 
         # If any FiniteSets see which elements of that finite set occur within
         # all other sets in the intersection
+        from sympy import Symbol
         for s in args:
             if s.is_FiniteSet:
                 other_args = [a for a in args if a != s]
@@ -1469,15 +1471,15 @@ class Intersection(Set):
                         if val.is_FiniteSet:
                             # all values from val which are contained in `s`
                             # and are non-numbers
-                            t = [x for x in s if val.contains(x) is true and not x.is_number]
+                            t = [x for x in s if val.contains(x) is true and x.atoms(Symbol)]
                             fin = FiniteSet(*t)
                             # collect the non-numbers from `s` and `val`
-                            non_numbers_in_val = [x for x in val if not x.is_number]
-                            non_numbers_in_s = [x for x in s if not x.is_number]
+                            non_numbers_in_val = [x for x in val if x.atoms(Symbol)]
+                            non_numbers_in_s = [x for x in s if x.atoms(Symbol)]
                             # remove `val` from other_args
                             other_args.remove(val)
                             if non_numbers_in_s == non_numbers_in_val:
-                                numbers_in_s = FiniteSet(*[x for x in s if x.is_number])
+                                numbers_in_s = FiniteSet(*[x for x in s if not x.atoms(Symbol)])
                                 s = s - numbers_in_s
                                 for x in numbers_in_s:
                                     if x in unk:
