@@ -1470,18 +1470,19 @@ class Intersection(Set):
                     for val in other_args:
                         if val.is_FiniteSet:
                             # all values from val which are contained in `s`
-                            # and are non-numbers
-                            t = [x for x in s if val.contains(x) is true and x.atoms(Symbol)]
-                            fin = FiniteSet(*t)
+                            # and don't have a Symbol
+                            fin = FiniteSet(*[x for x in s
+                                    if val.contains(x) is true and x.atoms(Symbol)])
                             # collect the non-numbers from `s` and `val`
-                            non_numbers_in_val = [x for x in val if x.atoms(Symbol)]
-                            non_numbers_in_s = [x for x in s if x.atoms(Symbol)]
+                            symbol_in_val = [x for x in val if x.atoms(Symbol)]
+                            symbol_in_s = [x for x in s if x.atoms(Symbol)]
                             # remove `val` from other_args
                             other_args.remove(val)
-                            if non_numbers_in_s == non_numbers_in_val:
-                                numbers_in_s = FiniteSet(*[x for x in s if not x.atoms(Symbol)])
-                                s = s - numbers_in_s
-                                for x in numbers_in_s:
+                            if symbol_in_s == symbol_in_val:
+                                non_symbol_in_s = FiniteSet(*[x for x in s
+                                                    if not x.atoms(Symbol)])
+                                s = s - non_symbol_in_s
+                                for x in non_symbol_in_s:
                                     if x in unk:
                                         unk.remove(x)
                             elif s != fin:
