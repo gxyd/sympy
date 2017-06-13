@@ -441,6 +441,42 @@ def prde_no_cancel_b_small(b, Q, n, DE):
     return f + H, A.col_join(B).col_join(C)
 
 
+def prde_cancel_liouvillian(b, Q, n, DE):
+    """
+    Pg, 237.
+    Examples of this are:
+    log(x + 1)*log(x), log(x + 1)/log(x)
+
+    """
+    m = len(Q)
+    f, A = [None]*(n + 1), [None]*(n + 1)
+
+    # Why use DecrementLevel? Below line answers that:
+    # Assuming that we can solve such problems over 'k' (not k[t])
+    with DecrementLevel(DE):
+        DE0 = DE
+    if DE.case == 'primitive':
+        ba, bd = frac_in(b, DE0.t, field=True)
+    elif DE.case == 'exp':
+        ba, bd = frac_in(b + n*derivation(DE0.t, DE0)/DE0.t, DE0.t)
+
+    for N in range(n, -1, -1):
+        Qyn = [frac_in(q.nth(N), DE0.t) for q in Q]
+        f[N], A[N] = param_rischDE(ba, bd, Qyn, DE0)
+        f[N] = [Poly(fa.as_expr()/fd.as_expr(), DE.t, field=True)
+                for fa, fd in f[N]]
+
+    for N in range(n, -1, -1):
+        ri = len(A[N]) - m
+        Qj = Qyn[N]
+        for i in range(ri):
+            djn = A[N + i]
+            fjn_tn = Poly(f[N][i]*t**N, DE.t)
+            # haven't defined Hj, hence will raise NameError
+            Hj[i] = Hn[i] + fjn_tn
+            Qj[i] = Qn[i] - derivation(fjn_tn, DE.t) - b*fjn_tn
+
+
 def param_poly_rischDE(a, b, q, n, DE):
     """Polynomial solutions of a parametric Risch differential equation.
 
@@ -471,23 +507,28 @@ def param_poly_rischDE(a, b, q, n, DE):
         b, q = b.quo_ground(a), [qi.quo_ground(a) for qi in q]
 
         if not b.is_zero and (DE.case == 'base' or
-                b.degree() > max(0, DE.d.degree() - 1)):
+                b.degree(DE.t) > max(0, DE.d.degree(DE.t) - 1)):
             return prde_no_cancel_b_large(b, q, n, DE)
 
-        elif ((b.is_zero or b.degree() < DE.d.degree() - 1)
-                and (DE.case == 'base' or DE.d.degree() >= 2)):
+        elif ((b.is_zero or b.degree(DE.t) < DE.d.degree(DE.t) - 1)
+                and (DE.case == 'base' or DE.d.degree(DE.t) >= 2)):
             return prde_no_cancel_b_small(b, q, n, DE)
 
-        elif (DE.d.degree() >= 2 and
-              b.degree() == DE.d.degree() - 1 and
+        elif (DE.d.degree(DE.t) >= 2 and
+              b.degree(DE.t) == DE.d.degree(DE.t) - 1 and
               n > -b.as_poly(DE.t).LC()/DE.d.as_poly(DE.t).LC()):
             raise NotImplementedError("prde_no_cancel_b_equal() is "
                 "not yet implemented.")
 
         else:
-            # Cancellation
-            raise NotImplementedError("prde_cancel() is not yet "
-                "implemented.")
+            if b.is_zero:
+                pass
+            else: # Liouvillian cases
+                if DE.case == 'primitive' or DE.case == 'exp':
+                    return prde_cancel_liouvillian(b, q, n, DE)
+                else:
+                    raise NotImplementedError("non-linear and hypertangent "
+                            "cases have not yet been implemented")
 
     # else: deg(a) > 0
 
