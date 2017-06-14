@@ -450,31 +450,38 @@ def prde_cancel_liouvillian(b, Q, n, DE):
     """
     m = len(Q)
     f, A = [None]*(n + 1), [None]*(n + 1)
+    #H = [[Poly(0, DE.t)]*m for i in range(n + 1)]
 
     # Why use DecrementLevel? Below line answers that:
     # Assuming that we can solve such problems over 'k' (not k[t])
-    with DecrementLevel(DE):
-        DE0 = DE
     if DE.case == 'primitive':
-        ba, bd = frac_in(b, DE0.t, field=True)
+        with DecrementLevel(DE):
+            ba, bd = frac_in(b, DE.t, field=True)
     elif DE.case == 'exp':
-        ba, bd = frac_in(b + n*derivation(DE0.t, DE0)/DE0.t, DE0.t)
+        with DecrementLevel(DE):
+            ba, bd = frac_in(b + n*derivation(DE.t, DE)/DE.t, DE.t)
 
     for N in range(n, -1, -1):
-        Qyn = [frac_in(q.nth(N), DE0.t) for q in Q]
-        f[N], A[N] = param_rischDE(ba, bd, Qyn, DE0)
+        with DecrementLevel(DE):
+            Qyn = [frac_in(q.nth(N), DE.t) for q in Q]
+            f[N], A[N] = param_rischDE(ba, bd, Qyn, DE)
         f[N] = [Poly(fa.as_expr()/fd.as_expr(), DE.t, field=True)
                 for fa, fd in f[N]]
 
+    r = [v.nullspace() for v in A]
+    # take the first vector of nullspace
+    d = [i[0][m - 1:] for i in r]
+
     for N in range(n, -1, -1):
         ri = len(A[N]) - m
-        Qj = Qyn[N]
+        dj = d[N]
+        Hj = [Poly(0, DE.t)]*ri
+        side_q = [Poly(0, DE.t)]*ri
         for i in range(ri):
-            djn = A[N + i]
-            fjn_tn = Poly(f[N][i]*t**N, DE.t)
-            # haven't defined Hj, hence will raise NameError
-            Hj[i] = Hn[i] + fjn_tn
-            Qj[i] = Qn[i] - derivation(fjn_tn, DE.t) - b*fjn_tn
+            djn = dj[n]
+            fjn_tn = Poly(f[N][i]*DE.t**N, DE.t)
+            Hj[i] = Hj[i] + fjn_tn
+            side_q[i] -= derivation(fjn_tn, DE) - b*fjn_tn
 
 
 def param_poly_rischDE(a, b, q, n, DE):
@@ -522,7 +529,7 @@ def param_poly_rischDE(a, b, q, n, DE):
 
         else:
             if b.is_zero:
-                pass
+                raise NotImplementedError
             else: # Liouvillian cases
                 if DE.case == 'primitive' or DE.case == 'exp':
                     return prde_cancel_liouvillian(b, q, n, DE)
