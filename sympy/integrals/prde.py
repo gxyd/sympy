@@ -1,5 +1,5 @@
 """
-Algorithms for solving Parametric Risch Differential Equations.
+plgorithms for solving Parametric Risch Differential Equations.
 
 The methods used for solving Parametric Risch Differential Equations parallel
 those for solving Risch Differential Equations.  See the outline in the
@@ -459,24 +459,25 @@ def prde_cancel_liouvillian(b, Q, n, DE):
             ba, bd = frac_in(b, DE.t, field=True)
     elif DE.case == 'exp':
         with DecrementLevel(DE):
-            ba, bd = frac_in(b + n*derivation(DE.t, DE)/DE.t, DE.t)
+            ba, bd = frac_in(b + n*derivation(DE.t, DE)/DE.t, DE.t, field=True)
 
     for N in range(n, -1, -1):
         with DecrementLevel(DE):
             Qyn = [frac_in(q.nth(N), DE.t) for q in Q]
-            f[N], A[N] = param_rischDE(ba, bd, Qyn, DE)
-        f[N] = [Poly(fa.as_expr()/fd.as_expr(), DE.t, field=True)
-                for fa, fd in f[N]]
+            fn, An = param_rischDE(ba, bd, Qyn, DE)
+        fn = [Poly(fa.as_expr()/fd.as_expr(), DE.t, field=True)
+                for fa, fd in fn]
 
-    r = [v.nullspace() for v in A]
-    # take the first vector of nullspace
-    d = [i[0][m - 1:] for i in r]
-
-    for N in range(n, -1, -1):
-        ri = len(A[N]) - m
-        dj = d[N]
+        V = An.nullspace()
+        # take the first vector of nullspace
+        # v = [c1, ..., cm, d1n, ..., drn_n]
+        v = An[0]
+        # dj = [d1n, ..., drn_n]; we have len(d) = rn_n
+        dj = v[m:]
+        ri = len(dj)
         Hj = [Poly(0, DE.t)]*ri
         side_q = [Poly(0, DE.t)]*ri
+
         for i in range(ri):
             djn = dj[n]
             fjn_tn = Poly(f[N][i]*DE.t**N, DE.t)
