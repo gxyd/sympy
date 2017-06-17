@@ -455,43 +455,36 @@ def prde_cancel_liouvillian(b, Q, n, DE):
 
     """
     m = len(Q)
-    f, A = [None]*(n + 1), [None]*(n + 1)
-    #H = [[Poly(0, DE.t)]*m for i in range(n + 1)]
+    f, A, Qy = [None]*(n + 1), [None]*(n + 1), [None]*(n + 1)
+    F = [None]*(n + 1)
 
     # Why use DecrementLevel? Below line answers that:
     # Assuming that we can solve such problems over 'k' (not k[t])
     if DE.case == 'primitive':
         with DecrementLevel(DE):
             ba, bd = frac_in(b, DE.t, field=True)
-    elif DE.case == 'exp':
-        with DecrementLevel(DE):
-            ba, bd = frac_in(b + n*derivation(DE.t, DE)/DE.t, DE.t, field=True)
 
-    Qy = [None]*(n + 1)
-    for N in range(n, -1, -1):
+    for i in range(n, -1, -1):
         with DecrementLevel(DE):
-            Qyn = [frac_in(q.nth(N), DE.t, field=True) for q in Q]
-            Qy[N] = Qyn
-            fn, An = param_rischDE(ba, bd, Qyn, DE)
-        f[N] = [Poly(fa.as_expr()/fd.as_expr(), DE.t, field=True)
+            # there is no-need to recheck this
+            if DE.case == 'exp':
+                ba, bd = frac_in(b + i*derivation(DE.t, DE)/DE.t,
+                                DE.t, field=True)
+            Qyi = [frac_in(q.nth(i), DE.t, field=True) for q in Q]
+            Qy[i] = Qyi
+            fn, A[i] = param_rischDE(ba, bd, Qyi, DE)
+        f[i] = [Poly(fa.as_expr()/fd.as_expr(), DE.t, field=True)
                 for fa, fd in fn]
 
-    for N in range(n, -1, -1):
-        V = An.nullspace()
-        # take the first vector of nullspace
-        # v = [c1, ..., cm, d1n, ..., drn_n]
-        v = V[0]
-        # dj = [d1n, ..., drn_n]; we have len(d) = rn_n
-        dj = v[m:]
-        ri = len(dj)
-        Hj = [Poly(0, DE.t)]*ri
-        side_q = [Poly(0, DE.t)]*ri
+        ri = len(fn)
+        Fi = F[i] = [None]*ri
 
-        for i in range(ri):
-            djn = dj[n]
-            fjn_tn = Poly(f[N][i]*DE.t**N, DE.t)
-            Hj[i] = Hj[i] + fjn_tn
-            side_q[i] -= derivation(fjn_tn, DE) - b*fjn_tn
+        for j in range(ri):
+            hji = f[i][j]*DE.t**i
+            Fi[j] = derivation(hji, DE) - b*hji
+        # in the next loop instead of Qy it has
+        # to be Qy + Fi taking its place, like below?
+        Qy += Fi
 
 
 def param_poly_rischDE(a, b, q, n, DE):
