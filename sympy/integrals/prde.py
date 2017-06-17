@@ -455,8 +455,7 @@ def prde_cancel_liouvillian(b, Q, n, DE):
 
     """
     m = len(Q)
-    f, A, Qy = [None]*(n + 1), [None]*(n + 1), [None]*(n + 1)
-    F = [None]*(n + 1)
+    f, A = [None]*(n + 1), [None]*(n + 1)
 
     # Why use DecrementLevel? Below line answers that:
     # Assuming that we can solve such problems over 'k' (not k[t])
@@ -470,21 +469,20 @@ def prde_cancel_liouvillian(b, Q, n, DE):
             if DE.case == 'exp':
                 ba, bd = frac_in(b + i*derivation(DE.t, DE)/DE.t,
                                 DE.t, field=True)
-            Qyi = [frac_in(q.nth(i), DE.t, field=True) for q in Q]
-            Qy[i] = Qyi
-            fn, A[i] = param_rischDE(ba, bd, Qyi, DE)
+            Qy = [frac_in(q.nth(i), DE.t, field=True) for q in Q]
+            fn, A[i] = param_rischDE(ba, bd, Qy, DE)
         f[i] = [Poly(fa.as_expr()/fd.as_expr(), DE.t, field=True)
                 for fa, fd in fn]
 
         ri = len(fn)
-        Fi = F[i] = [None]*ri
+        Fi = [None]*ri
 
         for j in range(ri):
             hji = f[i][j]*DE.t**i
             Fi[j] = derivation(hji, DE) - b*hji
-        # in the next loop instead of Qy it has
-        # to be Qy + Fi taking its place, like below?
-        Qy += Fi
+        # in the next loop instead of Q it has
+        # to be Q + Fi taking its place
+        Q += Fi
 
 
 def param_poly_rischDE(a, b, q, n, DE):
