@@ -476,6 +476,12 @@ def prde_cancel_liouvillian(b, Q, n, DE):
                 for fa, fd in fi]
 
         ri = len(fi)
+
+        if i == n:
+            M = A[i]
+        else:
+            M = A[i].col_join(M.row_join(zeros(M.rows, ri)))
+
         Fi, H[i] = [None]*ri, [None]*ri
 
         # from eq. on top of p.238 (unnumbered)
@@ -488,7 +494,8 @@ def prde_cancel_liouvillian(b, Q, n, DE):
         # to be Q + Fi taking its place
         Q += Fi
 
-    return (H, A)
+    print(M)
+    return (H, M)
 
 
 def param_poly_rischDE(a, b, q, n, DE):
@@ -536,7 +543,7 @@ def param_poly_rischDE(a, b, q, n, DE):
 
         else:
             if b.is_zero:
-                # Example: f = log(x)/x - log(x + 1)/(x - 1)
+                # Example: f = log(y) - log(y - 1)/y
                 raise NotImplementedError
             else: # Liouvillian cases
                 if DE.case == 'primitive' or DE.case == 'exp':
