@@ -455,7 +455,7 @@ def prde_cancel_liouvillian(b, Q, n, DE):
 
     """
     m = len(Q)
-    f, A = [None]*(n + 1), [None]*(n + 1)
+    H, A = [None]*(n + 1), [None]*(n + 1)
 
     # Why use DecrementLevel? Below line answers that:
     # Assuming that we can solve such problems over 'k' (not k[t])
@@ -470,19 +470,24 @@ def prde_cancel_liouvillian(b, Q, n, DE):
                 ba, bd = frac_in(b + i*derivation(DE.t, DE)/DE.t,
                                 DE.t, field=True)
             Qy = [frac_in(q.nth(i), DE.t, field=True) for q in Q]
-            fn, A[i] = param_rischDE(ba, bd, Qy, DE)
-        f[i] = [Poly(fa.as_expr()/fd.as_expr(), DE.t, field=True)
-                for fa, fd in fn]
+            fi, A[i] = param_rischDE(ba, bd, Qy, DE)
+        fi = [Poly(fa.as_expr()/fd.as_expr(), DE.t, field=True)
+                for fa, fd in fi]
 
-        ri = len(fn)
-        Fi = [None]*ri
+        ri = len(fi)
+        Fi, H[i] = [None]*ri, [None]*ri
 
+        # from eq. on top of p.238 (unnumbered)
         for j in range(ri):
-            hji = f[i][j]*DE.t**i
-            Fi[j] = derivation(hji, DE) - b*hji
+            hji = fi[j]*DE.t**i
+            H[i][j] = hji
+            # building up Sum(djn*(D(fjn*t^n) - b*fjnt^n))
+            Fi[j] = -(derivation(hji, DE) - b*hji)
         # in the next loop instead of Q it has
         # to be Q + Fi taking its place
         Q += Fi
+
+    return (H, A)
 
 
 def param_poly_rischDE(a, b, q, n, DE):
