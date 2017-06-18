@@ -465,8 +465,9 @@ def prde_cancel_liouvillian(b, Q, n, DE):
 
     for i in range(n, -1, -1):
         with DecrementLevel(DE):
-            # there is no-need to recheck this
+            # there is no need to recheck this
             if DE.case == 'exp':
+                #TODO: find example
                 ba, bd = frac_in(b + i*derivation(DE.t, DE)/DE.t,
                                 DE.t, field=True)
             Qy = [frac_in(q.nth(i), DE.t, field=True) for q in Q]
@@ -535,6 +536,7 @@ def param_poly_rischDE(a, b, q, n, DE):
 
         else:
             if b.is_zero:
+                # Example: f = log(x)/x - log(x + 1)/(x - 1)
                 raise NotImplementedError
             else: # Liouvillian cases
                 if DE.case == 'primitive' or DE.case == 'exp':
