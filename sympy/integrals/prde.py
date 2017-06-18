@@ -455,7 +455,7 @@ def prde_cancel_liouvillian(b, Q, n, DE):
 
     """
     m = len(Q)
-    H, A = [None]*(n + 1), [None]*(n + 1)
+    H = [None]*(n + 1)
 
     # Why use DecrementLevel? Below line answers that:
     # Assuming that we can solve such problems over 'k' (not k[t])
@@ -471,16 +471,16 @@ def prde_cancel_liouvillian(b, Q, n, DE):
                 ba, bd = frac_in(b + i*derivation(DE.t, DE)/DE.t,
                                 DE.t, field=True)
             Qy = [frac_in(q.nth(i), DE.t, field=True) for q in Q]
-            fi, A[i] = param_rischDE(ba, bd, Qy, DE)
+            fi, Ai = param_rischDE(ba, bd, Qy, DE)
         fi = [Poly(fa.as_expr()/fd.as_expr(), DE.t, field=True)
                 for fa, fd in fi]
 
         ri = len(fi)
 
         if i == n:
-            M = A[i]
+            M = Ai
         else:
-            M = A[i].col_join(M.row_join(zeros(M.rows, ri)))
+            M = Ai.col_join(M.row_join(zeros(M.rows, ri)))
 
         Fi, H[i] = [None]*ri, [None]*ri
 
