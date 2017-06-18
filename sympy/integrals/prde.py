@@ -494,7 +494,6 @@ def prde_cancel_liouvillian(b, Q, n, DE):
         # to be Q + Fi taking its place
         Q += Fi
 
-    print(M)
     return (H, M)
 
 
