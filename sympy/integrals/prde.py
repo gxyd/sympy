@@ -455,7 +455,7 @@ def prde_cancel_liouvillian(b, Q, n, DE):
 
     """
     m = len(Q)
-    H = [None]*(n + 1)
+    H = []
 
     # Why use DecrementLevel? Below line answers that:
     # Assuming that we can solve such problems over 'k' (not k[t])
@@ -482,14 +482,16 @@ def prde_cancel_liouvillian(b, Q, n, DE):
         else:
             M = Ai.col_join(M.row_join(zeros(M.rows, ri)))
 
-        Fi, H[i] = [None]*ri, [None]*ri
+        Fi, hi = [None]*ri, [None]*ri
 
         # from eq. on top of p.238 (unnumbered)
         for j in range(ri):
             hji = fi[j]*DE.t**i
-            H[i][j] = hji
+            hi[j] = hji
             # building up Sum(djn*(D(fjn*t^n) - b*fjnt^n))
             Fi[j] = -(derivation(hji, DE) - b*hji)
+
+        H += hi
         # in the next loop instead of Q it has
         # to be Q + Fi taking its place
         Q += Fi
@@ -541,15 +543,12 @@ def param_poly_rischDE(a, b, q, n, DE):
                 "not yet implemented.")
 
         else:
-            if b.is_zero:
-                # Example: f = log(y) - log(y - 1)/y
-                raise NotImplementedError
-            else: # Liouvillian cases
-                if DE.case == 'primitive' or DE.case == 'exp':
-                    return prde_cancel_liouvillian(b, q, n, DE)
-                else:
-                    raise NotImplementedError("non-linear and hypertangent "
-                            "cases have not yet been implemented")
+            # Liouvillian cases
+            if DE.case == 'primitive' or DE.case == 'exp':
+                return prde_cancel_liouvillian(b, q, n, DE)
+            else:
+                raise NotImplementedError("non-linear and hypertangent "
+                        "cases have not yet been implemented")
 
     # else: deg(a) > 0
 
