@@ -464,12 +464,11 @@ def prde_cancel_liouvillian(b, Q, n, DE):
             ba, bd = frac_in(b, DE.t, field=True)
 
     for i in range(n, -1, -1):
-        with DecrementLevel(DE):
-            # there is no need to recheck this
-            if DE.case == 'exp':
-                #TODO: find example
+        if DE.case == 'exp': # this re-checking can be avoided
+            with DecrementLevel(DE):
                 ba, bd = frac_in(b + i*derivation(DE.t, DE)/DE.t,
                                 DE.t, field=True)
+        with DecrementLevel(DE):
             Qy = [frac_in(q.nth(i), DE.t, field=True) for q in Q]
             fi, Ai = param_rischDE(ba, bd, Qy, DE)
         fi = [Poly(fa.as_expr()/fd.as_expr(), DE.t, field=True)
