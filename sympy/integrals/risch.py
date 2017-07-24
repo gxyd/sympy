@@ -1737,6 +1737,7 @@ def risch_integrate(f, x, extension=None, handle_first='log',
     fa, fd = DE.fa, DE.fd
 
     result = S(0)
+    non_elm = S(0)
     for case in reversed(DE.cases):
         if not fa.has(DE.t) and not fd.has(DE.t) and not case == 'base':
             DE.decrement_level()
@@ -1751,27 +1752,57 @@ def risch_integrate(f, x, extension=None, handle_first='log',
         elif case == 'base':
             # XXX: We can't call ratint() directly here because it doesn't
             # handle polynomials correctly.
-            ans = integrate(fa.as_expr()/fd.as_expr(), DE.x, risch=False)
-            b = False
-            i = S(0)
+            _f = (fa.as_expr()/fd.as_expr())
+
+            def df(f, result, non_elm):
+                if f.is_number or not f.has(*DE.T[1:]):
+                    result += integrate(f, DE.x, risch=False)
+                    non_elm += S.Zero
+                    return result, non_elm
+                # this seems alright
+                elif f.is_Add:
+                    for arg in f.args:
+                        if not arg.has(*DE.T[1:]):
+                            result += integrate(arg, DE.x, risch=False)
+                        else:
+                            result, non_elm = df(arg, result, non_elm)
+                elif f.is_Mul:
+                    f = f.expand(DE.x)
+                    for arg in f.expand(DE.x).args:
+                        if not arg.has(*DE.T[1:]):
+                            result += integrate(arg, DE.x, risch=False)
+                        else:
+                            result, non_elm = df(arg, result, non_elm)
+                elif not f.has(DE.x):
+                    result += S.Zero
+                    non_elm += f
+                    return result, non_elm
+
+                return result, non_elm
+
+            result, non_elm = df(_f, result, non_elm)
+            break
         else:
             raise NotImplementedError("Only exponential and logarithmic "
             "extensions are currently supported.")
 
         result += ans
+        DE.decrement_level()
         if b:
-            DE.decrement_level()
             fa, fd = frac_in(i, DE.t)
         else:
-            result = result.subs(DE.backsubs)
-            if not i.is_zero:
-                i = NonElementaryIntegral(i.function.subs(DE.backsubs),i.limits)
-            if not separate_integral:
-                result += i
-                return result
-            else:
+            fa, fd = frac_in((fa, fd), DE.t)
 
-                if isinstance(i, NonElementaryIntegral):
-                    return (result, i)
-                else:
-                    return (result, 0)
+    result = result.subs(DE.backsubs)
+    if not non_elm.is_zero:
+        non_elm = non_elm.subs(dict((DE.T[j], DE.Tfuncs[j - 1](DE.x))
+            for j in range(1, len(DE.T))))
+        non_elm = NonElementaryIntegral(non_elm.subs(DE.backsubs))
+    if not separate_integral:
+        result += non_elm
+        return result
+    else:
+        if isinstance(non_elm, NonElementaryIntegral):
+            return (result, non_elm)
+        else:
+            return (result, 0)
