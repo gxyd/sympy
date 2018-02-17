@@ -136,6 +136,13 @@ def _limit_seq(expr, n, trials):
 
         num, den = expr.as_numer_denom()
 
+        if not expr.has(Sum) and not expr.is_Add:
+            num_, den_ = (difference_delta(Abs(t).expand(), n)
+                           for t in [num, den])
+            expr_ = (num_ / den_).gammasimp()
+            if expr_ == 0:
+                return S.Zero
+
         num = dominant(num, n)
         if num is None:
             return None
@@ -224,14 +231,7 @@ def limit_seq(expr, n=None, trials=5):
                         return AccumulationBounds(Min(L1, L2), Max(L1, L2))
                     else:
                         return None
+                elif L1 == L2:
+                    return L1
     else:
-        L1 = _limit_seq(expr.xreplace({n: n_}), n_, trials)
-
-    if L1 is not None:
-        return L1
-    else:
-        # Maybe the absolute value is easier to deal with (though not if
-        # it's a sum). If it tends to 0, the limit is 0.
-        if not(expr.has(Sum) or expr.is_Add):
-            if _limit_seq(Abs(expr.xreplace({n: n_})), n_, trials) is S.Zero:
-                return S.Zero
+        return _limit_seq(expr.xreplace({n: n_}), n_, trials)
