@@ -2464,9 +2464,9 @@ def solve_linear_system(system, *symbols, **flags):
 
         s = "where "
         for ji in range(i, len(syms)):
-            s += str(syms[i]) + ", "
+            s += str(syms[ji]) + ", "
         s += "are any real numbers."
-        print("\t%s" % s)
+        print(colored("\t%s", "yellow") % s)
         return solutions
     else:
         print(colored("\tSince the given system has more equations than unknowns for an equivalent augmented matrix.", "yellow"))
