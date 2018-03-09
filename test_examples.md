@@ -1,3 +1,9 @@
+Please install `termcolor`, use
+```
+sudo pip install termcolor
+```
+on ubuntu like systems.
+
 Example 1
 =========
 
