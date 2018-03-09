@@ -13,6 +13,7 @@ This module contain solvers for all kinds of equations:
 """
 
 from __future__ import print_function, division
+from termcolor import colored
 
 from sympy.core.compatibility import (iterable, is_sequence, ordered,
     default_sort_key, range)
@@ -902,6 +903,7 @@ def solve(f, *symbols, **flags):
     # keeping track of how f was passed since if it is a list
     # a dictionary of results will be returned.
     ###########################################################################
+    eq_no = 1
 
     def _sympified_list(w):
         return list(map(sympify, w if iterable(w) else [w]))
@@ -923,6 +925,7 @@ def solve(f, *symbols, **flags):
         # get symbols from equations
         symbols = set().union(*[fi.free_symbols for fi in f])
         if len(symbols) < len(f):
+            print(colored("Given system has more equations than unknown.", "green"))
             for fi in f:
                 pot = preorder_traversal(fi)
                 for p in pot:
@@ -981,8 +984,13 @@ def solve(f, *symbols, **flags):
             f[i] = fi.as_expr()
 
         # rewrite hyperbolics in terms of exp
+        f_i = f[i]
         f[i] = f[i].replace(lambda w: isinstance(w, HyperbolicFunction),
                 lambda w: w.rewrite(exp))
+        if f_i != f[i]:
+            print(colored("Rewritting hyperbolics in terms of 'exp' function.", "green"))
+            print(colored("--------------------------------------------------", "green"))
+            print(colored("So that the equation %s becomes %s.", "yellow") % (f_i, f[i]))
 
         # if we have a Matrix, we need to iterate over its elements again
         if f[i].is_Matrix:
@@ -994,6 +1002,11 @@ def solve(f, *symbols, **flags):
         freei = f[i].free_symbols
         if freei and all(s.is_real or s.is_imaginary for s in freei):
             fr, fi = f[i].as_real_imag()
+            if fr != 0 and fi != 0:
+                print(colored("Separating into real and imaginary parts the equation %s = 0, which is "
+                              "equivalent to simultaneously solving: " % f[i], "green"))
+                print(colored("%s = 0 and %s = 0" % (fr, fi), "yellow"))
+                print('\n')
             # accept as long as new re, im, arg or atan2 are not introduced
             had = f[i].atoms(re, im, arg, atan2)
             if fr and fi and fr != fi and not any(
@@ -1800,6 +1813,7 @@ def _solve_system(exprs, symbols, **flags):
 
         else:
             if len(symbols) > len(polys):
+                print(colored("System has more unknowns than equations.", "green"))
                 from sympy.utilities.iterables import subsets
 
                 free = set().union(*[p.free_symbols for p in polys])
@@ -2251,8 +2265,28 @@ def solve_linear_system(system, *symbols, **flags):
     if system.rows == system.cols - 1 == len(symbols):
         try:
             # well behaved n-equations and n-unknowns
+            from sympy.printing import pprint, pretty
             inv = inv_quick(system[:, :-1])
-            rv = dict(zip(symbols, inv*system[:, -1]))
+            l = inv*system[:, -1]
+            rv = dict(zip(symbols, l))
+            print(colored("\tThis system of equations is equivalent to solving.", "green"))
+            print(colored("\tAX = b where,", "green"))
+            print(colored("\tA = %s, X = %s and b = %s." % (system[:, :-1], Matrix(symbols), system[:, -1]), "yellow"))
+            print(colored("\tSince the inverse of A exists.", "green"))
+            print(colored("\t=>\tThe given system of equations is well behaved.", "green"))
+            print(colored("\t=>\tA**-1 = %s." % inv, "red"))
+            print('\n')
+            print(colored("\tThe solution of which is given by X = A**-1 * b", "yellow"))
+            print(colored("\tSubstitute values of A and b from above we get,", "green"))
+            print(colored("\t=>\t%s = %s**-1 * %s", "red") % (Matrix(symbols), system[:, :-1], system[:, -1]))
+            print(colored("\t\t\t\t\t= %s", "red") % l)
+            sol = "Hence "
+            for i in range(len(symbols)):
+                sol += "%s = %s, " % (symbols[i], l[i])
+            print("\n")
+            sol += "is the unique solution."
+            print(colored("\t\t" + sol, "red"))
+            print("\n")
             if do_simplify:
                 for k, v in rv.items():
                     rv[k] = simplify(v)
@@ -2266,9 +2300,14 @@ def solve_linear_system(system, *symbols, **flags):
     syms = list(symbols)
 
     i, m = 0, matrix.cols - 1  # don't count augmentation
+    print(colored("\tTry to get augmented matrix %s in row-echolen form.", "yellow") % matrix)
+    print("\n")
 
     while i < matrix.rows:
+        print(colored("\tFor %s th row.", "yellow") % (i+1))
+        print(colored("\t-------------", "yellow"))
         if i == m:
+            print(colored("\tThe system of equations is overdetermined.", "green"))
             # an overdetermined system
             if any(matrix[i:, m]):
                 return None   # no solutions
@@ -2340,6 +2379,8 @@ def solve_linear_system(system, *symbols, **flags):
         pivot_inv = S.One/matrix[i, i]
 
         # divide all elements in the current row by the pivot
+        print(colored("\t%s is the row containing pivot element", "yellow") % (i+1))
+        print(colored("\tDivide all the elements in the current row by the pivot element = %s.", "yellow") % matrix[i, i])
         matrix.row_op(i, lambda x, _: x * pivot_inv)
 
         for k in range(i + 1, matrix.rows):
@@ -2355,10 +2396,13 @@ def solve_linear_system(system, *symbols, **flags):
     # if there weren't any problems, augmented matrix is now
     # in row-echelon form so we can check how many solutions
     # there are and extract them using back substitution
+    print(colored("\tAugmented matrix is now in row-echelon form and equals:", "green"))
+    print(colored("\t\t\t%s", "red") % matrix)
 
     if len(syms) == matrix.rows:
         # this system is Cramer equivalent so there is
         # exactly one solution to this system of equations
+        print("\tThe given system of equations has exactly one solution.")
         k, solutions = i - 1, {}
 
         while k >= 0:
@@ -2379,6 +2423,7 @@ def solve_linear_system(system, *symbols, **flags):
     elif len(syms) > matrix.rows:
         # this system will have infinite number of solutions
         # dependent on exactly len(syms) - i parameters
+        print("\tThe given system of equations has infinite number of solutions.")
         k, solutions = i - 1, {}
 
         while k >= 0:
