@@ -1813,7 +1813,7 @@ def _solve_system(exprs, symbols, **flags):
 
         else:
             if len(symbols) > len(polys):
-                print(colored("System has more unknowns than equations.", "green"))
+                print(colored("\tSystem has more unknowns than equations.", "green"))
                 from sympy.utilities.iterables import subsets
 
                 free = set().union(*[p.free_symbols for p in polys])
@@ -2261,6 +2261,7 @@ def solve_linear_system(system, *symbols, **flags):
 
     """
     do_simplify = flags.get('simplify', True)
+    from sympy.printing import pprint
 
     if system.rows == system.cols - 1 == len(symbols):
         try:
@@ -2300,23 +2301,33 @@ def solve_linear_system(system, *symbols, **flags):
     syms = list(symbols)
 
     i, m = 0, matrix.cols - 1  # don't count augmentation
-    print(colored("\tTry to get augmented matrix %s in row-echolen form.", "yellow") % matrix)
+    print(colored("\tTry to get augmented matrix %s in row-echolen form. Currently matrix is:", "green") % matrix)
+    print(colored("\t------------------------------------------------------------------------", "green"))
+    pprint(matrix)
     print("\n")
 
     while i < matrix.rows:
         print(colored("\tFor %s th row.", "yellow") % (i+1))
         print(colored("\t-------------", "yellow"))
         if i == m:
-            print(colored("\tThe system of equations is overdetermined.", "green"))
+            print(colored("\tSince the given system has = %s equations and %s unknowns.", "green") % (matrix.rows, len(symbols)))
+            print(colored("\t=>\tThe system of equations is overdetermined.", "green"))
             # an overdetermined system
             if any(matrix[i:, m]):
+                print("\tSince in the right-hand side we have non-zero value.")
+                print("\t=>\tThe given system has no solution.")
                 return None   # no solutions
             else:
+                print(colored("\tSince the rows after row %s are redundant, we can remove the trailing rows.", "green") % i)
+                print(colored("\tResluling in equivalent matrix:", "green"))
                 # remove trailing rows
                 matrix = matrix[:i, :]
+                pprint(matrix)
+                print("\n")
                 break
 
         if not matrix[i, i]:
+            print(colored("\tThe current column has no pivot element, so try to find one in other columns."))
             # there is no pivot in current column
             # so try to find one in other columns
             for k in range(i + 1, m):
@@ -2379,9 +2390,10 @@ def solve_linear_system(system, *symbols, **flags):
         pivot_inv = S.One/matrix[i, i]
 
         # divide all elements in the current row by the pivot
-        print(colored("\t%s is the row containing pivot element", "yellow") % (i+1))
-        print(colored("\tDivide all the elements in the current row by the pivot element = %s.", "yellow") % matrix[i, i])
+        print(colored("\tRow %s contains the pivot element.", "yellow") % (i+1))
+        print(colored("\tDivide all the elements in the current row by the pivot element = %s. ------>", "yellow") % matrix[i, i])
         matrix.row_op(i, lambda x, _: x * pivot_inv)
+        pprint(matrix)
 
         for k in range(i + 1, matrix.rows):
             if matrix[k, i]:
@@ -2389,7 +2401,10 @@ def solve_linear_system(system, *symbols, **flags):
 
                 # subtract from the current row the row containing
                 # pivot and multiplied by extracted coefficient
+                print(colored("\tSubtract %s times row %s from row %s. --------------->", "yellow") % (coeff, i+1, k+1))
                 matrix.row_op(k, lambda x, j: simplify(x - matrix[i, j]*coeff))
+                pprint(matrix)
+                print("\n")
 
         i += 1
 
@@ -2402,8 +2417,10 @@ def solve_linear_system(system, *symbols, **flags):
     if len(syms) == matrix.rows:
         # this system is Cramer equivalent so there is
         # exactly one solution to this system of equations
-        print("\tThe given system of equations has exactly one solution.")
+        print(colored("\tSince the augmented matrix equal number of rows(=%s) and unknowns(=%s).", "yellow") % (len(syms), len(syms)))
+        print(colored("\t=>\tThe given system of equations has exactly one solution.", "yellow"))
         k, solutions = i - 1, {}
+        print(colored("\tUse back-substituion in augmented matrix to obtain solution.", "yellow"))
 
         while k >= 0:
             content = matrix[k, m]
@@ -2423,8 +2440,9 @@ def solve_linear_system(system, *symbols, **flags):
     elif len(syms) > matrix.rows:
         # this system will have infinite number of solutions
         # dependent on exactly len(syms) - i parameters
-        print("\tThe given system of equations has infinite number of solutions.")
+        print(colored("\tThe given system of equations has infinite number of solutions.", "yellow"))
         k, solutions = i - 1, {}
+        print(colored("\tUse back-substituion in augmented matrix to obtain solution.", "yellow"))
 
         while k >= 0:
             content = matrix[k, m]
@@ -2444,8 +2462,15 @@ def solve_linear_system(system, *symbols, **flags):
 
             k -= 1
 
+        s = "where "
+        for ji in range(i, len(syms)):
+            s += str(syms[i]) + ", "
+        s += "are any real numbers."
+        print("\t%s" % s)
         return solutions
     else:
+        print(colored("\tSince the given system has more equations than unknowns for an equivalent augmented matrix.", "yellow"))
+        print(colored("\t=>\tThe given system has no solution.", "yellow"))
         return []   # no solutions
 
 
